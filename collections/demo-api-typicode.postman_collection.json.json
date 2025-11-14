@@ -1,0 +1,276 @@
+{
+    "info": {
+        "_postman_id": "felipe-demo-api-qa",
+        "name": "Demo API - Typicode (Portfolio QA - Felipe Lucena)",
+        "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+    },
+    "variable": [
+        {
+            "key": "baseUrl",
+            "value": "{{baseUrl}}"
+        }
+    ],
+    "item": [
+
+        {
+            "name": "GET /posts – Lista de posts (Validação Completa)",
+            "request": { "method": "GET", "url": "{{baseUrl}}/posts" },
+            "event": [
+                {
+                    "listen": "test",
+                    "script": {
+                        "exec": [
+                            "pm.test(\"Status 200\", () => pm.response.to.have.status(200));",
+                            "",
+                            "const json = pm.response.json();",
+                            "",
+                            "pm.test(\"É array\", () => pm.expect(Array.isArray(json)).to.be.true);",
+                            "",
+                            "pm.test(\"Itens possuem id e title\", () => {",
+                            "   json.forEach(p => {",
+                            "       pm.expect(p).to.have.property(\"id\");",
+                            "       pm.expect(p).to.have.property(\"title\");",
+                            "   });",
+                            "});",
+                            "",
+                            "pm.test(\"Contrato dos posts é válido\", () => {",
+                            "   const schema = {",
+                            "       type: \"array\",",
+                            "       items: {",
+                            "           type: \"object\",",
+                            "           required: [\"id\", \"title\"],",
+                            "           properties: {",
+                            "               id: { type: \"number\" },",
+                            "               title: { type: \"string\" }",
+                            "           }",
+                            "       }",
+                            "   };",
+                            "   pm.response.to.have.jsonSchema(schema);",
+                            "});",
+                            "",
+                            "pm.test(\"Tempo abaixo de 500ms\", () => pm.expect(pm.response.responseTime).to.be.below(500));"
+                        ]
+                    }
+                }
+            ]
+        },
+
+        {
+            "name": "GET /posts/1 – Post existente",
+            "request": { "method": "GET", "url": "{{baseUrl}}/posts/1" },
+            "event": [
+                {
+                    "listen": "test",
+                    "script": {
+                        "exec": [
+                            "pm.test(\"Status 200\", () => pm.response.to.have.status(200));",
+                            "const json = pm.response.json();",
+                            "pm.test(\"ID é 1\", () => pm.expect(json.id).to.eql(1));",
+                            "pm.test(\"Possui title válido\", () => pm.expect(json.title).to.be.a(\"string\"));"
+                        ]
+                    }
+                }
+            ]
+        },
+
+        {
+            "name": "GET /posts/999999 – ID inexistente",
+            "request": { "method": "GET", "url": "{{baseUrl}}/posts/999999" },
+            "event": [
+                {
+                    "listen": "test",
+                    "script": {
+                        "exec": [
+                            "pm.test(\"Status deve ser 200 ou 404\", () => pm.expect([200,404]).to.include(pm.response.code));",
+                            "const text = pm.response.text();",
+                            "",
+                            "if(pm.response.code === 200 && text){",
+                            "   const json = pm.response.json();",
+                            "   pm.test(\"Body vazio ou objeto sem campos\", ()=> pm.expect(Object.keys(json).length).to.be.within(0,1));",
+                            "}"
+                        ]
+                    }
+                }
+            ]
+        },
+
+        {
+            "name": "GET /posts/abc – ID inválido",
+            "request": { "method": "GET", "url": "{{baseUrl}}/posts/abc" },
+            "event": [
+                {
+                    "listen": "test",
+                    "script": {
+                        "exec": [
+                            "pm.test(\"Status coerente (404/400/500)\", () => pm.expect([400,404,500]).to.include(pm.response.code));",
+                            "",
+                            "const text = pm.response.text();",
+                            "if(text){",
+                            "   const json = pm.response.json();",
+                            "   pm.test(\"Não deve possuir campos válidos de post\", ()=>{",
+                            "       pm.expect(json).to.not.have.property(\"id\");",
+                            "       pm.expect(json).to.not.have.property(\"title\");",
+                            "   });",
+                            "}"
+                        ]
+                    }
+                }
+            ]
+        },
+
+        {
+            "name": "GET /comments – Lista de comentários",
+            "request": { "method": "GET", "url": "{{baseUrl}}/comments" },
+            "event": [
+                {
+                    "listen": "test",
+                    "script": {
+                        "exec": [
+                            "pm.test(\"Status 200\", () => pm.response.to.have.status(200));",
+                            "const json = pm.response.json();",
+                            "pm.test(\"É array\", ()=> pm.expect(Array.isArray(json)).to.be.true);",
+                            "",
+                            "pm.test(\"Estrutura dos comentários\", ()=>{",
+                            "   json.forEach(c=>{",
+                            "       pm.expect(c).to.have.property(\"id\");",
+                            "       pm.expect(c).to.have.property(\"body\");",
+                            "       pm.expect(c).to.have.property(\"postId\");",
+                            "   });",
+                            "});"
+                        ]
+                    }
+                }
+            ]
+        },
+
+        {
+            "name": "GET /comments?postId=1 – Filtrar comentários",
+            "request": { "method": "GET", "url": "{{baseUrl}}/comments?postId=1" },
+            "event": [
+                {
+                    "listen": "test",
+                    "script": {
+                        "exec": [
+                            "pm.test(\"Status 200\", ()=> pm.response.to.have.status(200));",
+                            "const json = pm.response.json();",
+                            "pm.test(\"Todos possuem postId = 1\", ()=> json.forEach(c=> pm.expect(c.postId).to.eql(1)));"
+                        ]
+                    }
+                }
+            ]
+        },
+
+        {
+            "name": "GET /comments?postId=9999 – Filtro sem resultado",
+            "request": { "method": "GET", "url": "{{baseUrl}}/comments?postId=9999" },
+            "event": [
+                {
+                    "listen": "test",
+                    "script": {
+                        "exec":[
+                            "pm.test(\"Status 200 mesmo sem dados\", ()=> pm.response.to.have.status(200));",
+                            "const json = pm.response.json();",
+                            "pm.test(\"Retorno vazio\", ()=> pm.expect(json.length).to.eql(0));"
+                        ]
+                    }
+                }
+            ]
+        },
+
+        {
+            "name": "GET /comments?postId=abc – Tipo inválido",
+            "request": { "method": "GET", "url": "{{baseUrl}}/comments?postId=abc" },
+            "event": [
+                {
+                    "listen": "test",
+                    "script": {
+                        "exec":[
+                            "pm.test(\"Status coerente\", ()=> pm.expect([200,400]).to.include(pm.response.code));",
+                            "const json = pm.response.json();",
+                            "pm.test(\"Não deve retornar comentários válidos\", ()=>{",
+                            "   json.forEach(c=> pm.expect(c.postId).to.not.eql(\"abc\"));",
+                            "});"
+                        ]
+                    }
+                }
+            ]
+        },
+
+        {
+            "name": "GET /profile – Profile",
+            "request": { "method": "GET", "url": "{{baseUrl}}/profile" },
+            "event":[
+                {
+                    "listen": "test",
+                    "script": {
+                        "exec":[
+                            "pm.test(\"Status 200\", ()=> pm.response.to.have.status(200));",
+                            "const json = pm.response.json();",
+                            "pm.test(\"Possui campo name\", ()=> pm.expect(json.name).to.be.a(\"string\"));"
+                        ]
+                    }
+                }
+            ]
+        },
+
+        {
+            "name": "WORKFLOW → Salvar postId",
+            "request": { "method": "GET", "url": "{{baseUrl}}/posts" },
+            "event":[
+                {
+                    "listen": "test",
+                    "script":{
+                        "exec":[
+                            "const json = pm.response.json();",
+                            "pm.expect(json.length).to.be.above(0);",
+                            "pm.environment.set(\"postId\", json[0].id);",
+                            "console.log(\"postId salvo:\", json[0].id);"
+                        ]
+                    }
+                }
+            ]
+        },
+
+        {
+            "name": "WORKFLOW → Comentários do post salvo",
+            "request": { "method": "GET", "url": "{{baseUrl}}/comments?postId={{postId}}" },
+            "event":[
+                {
+                    "listen":"test",
+                    "script":{
+                        "exec":[
+                            "pm.test(\"Status 200\", ()=> pm.response.to.have.status(200));",
+                            "const json = pm.response.json();",
+                            "const postId = Number(pm.environment.get(\"postId\"));",
+                            "pm.test(\"Todos têm postId correto\", ()=> json.forEach(c=> pm.expect(c.postId).to.eql(postId)));"
+                        ]
+                    }
+                }
+            ]
+        },
+
+        {
+            "name": "GET /postsss – Rota inválida",
+            "request": { "method": "GET", "url": "{{baseUrl}}/postsss" },
+            "event":[
+                {
+                    "listen":"test",
+                    "script":{
+                        "exec":[
+                            "pm.test(\"Erro coerente\", ()=> pm.expect([404,400,500]).to.include(pm.response.code));",
+                            "const text = pm.response.text();",
+                            "if(text){",
+                            "   const json = pm.response.json();",
+                            "   if(Array.isArray(json)){",
+                            "       pm.test(\"Array não deve ter estrutura de posts\", ()=>{",
+                            "           json.forEach(i=> pm.expect(i).to.not.have.property(\"title\"));",
+                            "       });",
+                            "   }",
+                            "}"
+                        ]
+                    }
+                }
+            ]
+        }
+    ]
+}
